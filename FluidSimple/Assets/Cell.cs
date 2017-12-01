@@ -12,8 +12,56 @@ public class Cell : MonoBehaviour
     public SpriteRenderer sprite;
     public TextMesh text;
 
-    private void Awake()
-    {
+    private static Material lineMaterial;
 
+    private static void CreateLineMaterial()
+    {
+        if (!lineMaterial)
+        {
+            // Unity has a built-in shader that is useful for drawing
+            // simple colored things.
+            Shader shader = Shader.Find("Hidden/Internal-Colored");
+            lineMaterial = new Material(shader);
+            lineMaterial.hideFlags = HideFlags.HideAndDontSave;
+            // Turn on alpha blending
+            lineMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            lineMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            // Turn backface culling off
+            lineMaterial.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
+            // Turn off depth writes
+            lineMaterial.SetInt("_ZWrite", 0);
+        }
+    }
+
+    private int lineCount = 1;
+    private int radius = 4;
+
+    public void OnRenderObject()
+    {
+        if (ColorPen.instance != null && ColorPen.instance.penType == ColorPen.PenType.VelocityAddition)
+        {
+            CreateLineMaterial();
+            // Apply the line material
+            lineMaterial.SetPass(0);
+
+            GL.PushMatrix();
+            // Set transformation matrix for drawing to
+            // match our transform
+            GL.MultMatrix(transform.localToWorldMatrix);
+
+            // Draw lines
+            GL.Begin(GL.LINES);
+
+            // Vertex colors change from red to green
+            GL.Color(Color.red);
+            //GL.Color(new Color(1, 0, 0, 0.8F));
+            // One vertex at transform position
+            GL.Vertex3(0, 0, 0);
+            // Another vertex at edge of circle
+            GL.Vertex3(velocity.x, velocity.y, 0);
+
+            GL.End();
+            GL.PopMatrix();
+        }
     }
 }
