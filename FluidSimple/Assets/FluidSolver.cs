@@ -6,7 +6,6 @@ using UnityEngine;
 public class FluidSolver : MonoBehaviour
 {
     public PopulateGrid grid1;
-    public PopulateGrid grid2;
     public int iterations = 20;
 
     public enum GhostBehaviour
@@ -15,29 +14,37 @@ public class FluidSolver : MonoBehaviour
         MirrorHorizontal,
         MirrorVertical
     }
-    public void AddSource(List<Cell> cells, float color)
+
+    private void Swap(ref float[] grid1, ref float[] grid2)
     {
-        foreach (var cell in cells)
-        {
-            cell.color = color;
-        }
+        var temp = grid1;
+        grid1 = grid2;
+        grid2 = temp;
+    }
+
+    public void Update()
+    {
+        DensityStep(0.001f);
     }
 
     public void DensityStep(float diff)
     {
-        //Diffuse(diff, GhostBehaviour.Copy);
-        //Advect(GhostBehaviour.Copy);
+        Diffuse(diff, GhostBehaviour.Copy, grid1.N, ref grid1.colors, ref grid1.temp);
+        Swap(ref grid1.colors, ref grid1.temp);
+        Advect(GhostBehaviour.Copy, grid1.N, ref grid1.colors, ref grid1.temp, ref grid1.velocitiesX, ref grid1.velocitiesY);
+        Swap(ref grid1.colors, ref grid1.temp);
+        grid1.RefreshCells();
     }
 
-    private int Pos(int i, int j, int N)
+    public static int Pos(int i, int j, int N)
     {
         return i * N + j;
     }
 
-    public void Diffuse(float diff, GhostBehaviour b)
+    public void Diffuse(float diff, GhostBehaviour b, int N, ref float[] x0, ref float[] x1)
     {
-        float a = Time.deltaTime * diff * grid1.width * grid1.height;
-        //LinSolve(b, a, 1 + 4 * a);
+        float a = Time.deltaTime * diff * grid1.N * grid1.N;
+        LinSolve(b, N, a, 1 + 4 * a, ref x0, ref x1);
     }
 
     /// <summary>
@@ -46,7 +53,7 @@ public class FluidSolver : MonoBehaviour
     /// <param name="b">Behaviour at the boundary</param>
     /// <param name="a">Rate of aquisition from neighbours</param>
     /// <param name="c">Damping rate</param>
-    public void LinSolve(GhostBehaviour b, int N, float a, float c, float[] x0, float[] x1)
+    public void LinSolve(GhostBehaviour b, int N, float a, float c, ref float[] x0, ref float[] x1)
     {
         for (int n = 0; n < iterations; n++)
         {
@@ -54,15 +61,15 @@ public class FluidSolver : MonoBehaviour
             {
                 for (int j = 1; j < N - 1; j++)
                 {
-                    x1[Pos(i, j, N)] = x0[Pos(i, j, N)] + a * (x1[Pos(i - 1, j, N)] +
-                    x1[Pos(i + 1, j, N)] + x1[Pos(i, j - 1, N)] + x1[Pos(i, j + 1, N)]) / c;
+                    x1[Pos(i, j, N)] = (x0[Pos(i, j, N)] + a * (x1[Pos(i - 1, j, N)] +
+                    x1[Pos(i + 1, j, N)] + x1[Pos(i, j - 1, N)] + x1[Pos(i, j + 1, N)])) / c;
                 }
             }
-            SetBoundary(b, x1, N);
+            SetBoundary(b, ref x1, N);
         }
     }
 
-    public void SetBoundary(GhostBehaviour b, float[] x, int N)
+    public void SetBoundary(GhostBehaviour b, ref float[] x, int N)
     {
         for (int i = 1; i < N - 1; i++)
         {
@@ -77,14 +84,14 @@ public class FluidSolver : MonoBehaviour
         x[Pos(N - 1, N - 1, N)] = 0.5f * (x[Pos(N - 2, N - 1, N)] + x[Pos(N - 1, N - 2, N)]);
     }
 
-    void Advect(GhostBehaviour b, int N, float[] c0, float[] c1, float[] vx, float[] vy)
+    void Advect(GhostBehaviour b, int N, ref float[] c0, ref float[] c1, ref float[] vx, ref float[] vy)
     {
 
         float x, y, s0, t0, s1, t1, dt0;
-        dt0 = Time.deltaTime * grid1.width;
-        for (int i = 1; i < grid1.width - 1; i++)
+        dt0 = Time.deltaTime * N;
+        for (int i = 1; i < N - 1; i++)
         {
-            for (int j = 1; j < grid1.height - 1; j++)
+            for (int j = 1; j < N - 1; j++)
             {
                 x = i - dt0 * vx[Pos(i, j, N)];
                 y = j - dt0 * vy[Pos(i, j, N)];
@@ -103,6 +110,6 @@ public class FluidSolver : MonoBehaviour
                 c1[Pos(i, j, N)] = s0 * (t0 * c0[Pos(i0, j0, N)] + t1 * c0[Pos(i0, j1, N)]) + s1 * (t0 * c0[Pos(i1, j0, N)] + t1 * c0[Pos(i1, j1, N)]);
             }
         }
-        SetBoundary(b, c1, N);
+        SetBoundary(b, ref c1, N);
     }
 }

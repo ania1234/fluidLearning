@@ -4,11 +4,14 @@ using UnityEngine;
 
 public class PopulateGrid : MonoBehaviour
 {
-    public int width;
-    public int height;
+    public int N;
     public Cell cellPrefab;
 
-    private Cell[,] cells;
+    public float[] colors;
+    public float[] velocitiesX;
+    public float[] velocitiesY;
+    public float[] temp;
+    public Cell[] cells;
 
     private void Start()
     {
@@ -17,21 +20,37 @@ public class PopulateGrid : MonoBehaviour
 
     public void PopulateGridFunction()
     {
-        cells = new Cell[width, height];
+        cells = new Cell[N * N];
+        velocitiesX = new float[N * N];
+        velocitiesY = new float[N * N];
+        colors = new float[N * N];
+        temp = new float[N * N];
         Vector3 cellSpacing = cellPrefab.sprite.bounds.size;
-        for (int i = 0; i < width; i++)
+        for (int i = 0; i < N; i++)
         {
-            for (int j = 0; j < height; j++)
+            for (int j = 0; j < N; j++)
             {
                 var cell = GameObject.Instantiate(cellPrefab, this.transform.position + new Vector3(cellSpacing.x * i, -cellSpacing.y * j), Quaternion.identity, this.transform);
-                cells[i, j] = cell;
+                cell.i = i;
+                cell.j = j;
+                cell.grid = this;
+                cells[FluidSolver.Pos(i, j, N)] = cell;
             }
         }
     }
 
-    public Cell Cell(int i, int j)
+    public void RefreshCells()
     {
-        return cells[i, j];
+        for (int i = 0; i < N; i++)
+        {
+            for (int j = 0; j < N; j++)
+            {
+                int pos = FluidSolver.Pos(i, j, N);
+                cells[pos].color = colors[pos];
+                cells[pos].velX = velocitiesX[pos];
+                cells[pos].velY = velocitiesY[pos];
+            }
+        }
     }
 
 }

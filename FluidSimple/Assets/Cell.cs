@@ -8,11 +8,27 @@ public class Cell : MonoBehaviour
     public float color { get { return _color; } set { text.text = value.ToString(); sprite.color = new Color(0, 0, value); _color = value; } }
     public float velX { get { return velocity.x; } set { velocity.x = value; } }
     public float velY { get { return velocity.y; } set { velocity.y = value; } }
+    public int i;
+    public int j;
+    public PopulateGrid grid;
     public Vector2 velocity;
     public SpriteRenderer sprite;
     public TextMesh text;
 
     private static Material lineMaterial;
+
+    public void UpdateColor()
+    {
+        int pos = FluidSolver.Pos(i, j, grid.N);
+        grid.colors[pos] = color;
+    }
+
+    public void UpdateVelocity()
+    {
+        int pos = FluidSolver.Pos(i, j, grid.N);
+        grid.velocitiesX[pos] = velX;
+        grid.velocitiesY[pos] = velY;
+    }
 
     private static void CreateLineMaterial()
     {
@@ -32,9 +48,6 @@ public class Cell : MonoBehaviour
             lineMaterial.SetInt("_ZWrite", 0);
         }
     }
-
-    private int lineCount = 1;
-    private int radius = 4;
 
     public void OnRenderObject()
     {

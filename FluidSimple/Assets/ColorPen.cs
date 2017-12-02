@@ -52,10 +52,12 @@ public class ColorPen : MonoBehaviour
                     {
                         case PenType.Coloring:
                             c.color = this.color.b;
+                            c.UpdateColor();
                             break;
 
                         case PenType.VelocityAddition:
                             c.velocity += (new Vector2(Input.mousePosition.x, Input.mousePosition.y) - prevMousePosition) * deltaPosMultiplier;
+                            c.UpdateVelocity();
                             break;
 
                         default:
