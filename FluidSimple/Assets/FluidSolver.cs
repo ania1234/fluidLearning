@@ -112,4 +112,32 @@ public class FluidSolver : MonoBehaviour
         }
         SetBoundary(b, ref c1, N);
     }
+
+    void Project(int N, ref float[] velX, ref float[] velY, ref float[] p, ref float[] div)
+    {
+        for (int i = 1; i < N - 1; i++)
+        {
+            for (int j = 1; j < N - 1; j++)
+            {
+                div[Pos(i, j, N)] = -0.5f * (velX[Pos(i + 1, j, N)] - velX[Pos(i - 1, j, N)] + velY[Pos(i, j + 1, N)] - velY[Pos(i, j - 1, N)]) / N;
+                p[Pos(i, j, N)] = 0;
+            }
+        }
+
+        SetBoundary(GhostBehaviour.Copy, ref div, N);
+        SetBoundary(GhostBehaviour.Copy, ref p, N);
+        LinSolve(GhostBehaviour.Copy, N, 1, 2, ref p, ref div);
+        for (int i = 1; i < N - 1; i++)
+        {
+            for (int j = 1; j < N - 1; j++)
+            {
+                velX[Pos(i, j, N)] -= 0.5f * N * (p[Pos(i + 1, j, N)] - p[Pos(i - 1, j, N)]);
+                velY[Pos(i, j, N)] -= 0.5f * N * (p[Pos(i, j + 1, N)] - p[Pos(i, j - 1, N)]);
+            }
+        }
+        SetBoundary(GhostBehaviour.MirrorHorizontal, ref velX, N);
+        SetBoundary(GhostBehaviour.MirrorVertical, ref velY, N);
+    }
+
+
 }
